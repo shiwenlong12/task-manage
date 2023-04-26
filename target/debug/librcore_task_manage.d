@@ -1,0 +1,1 @@
+/home/swl/os/crate_module/task-manage/target/debug/librcore_task_manage.rlib: /home/swl/os/crate_module/task-manage/src/id.rs /home/swl/os/crate_module/task-manage/src/lib.rs /home/swl/os/crate_module/task-manage/src/manager.rs /home/swl/os/crate_module/task-manage/src/scheduler.rs
