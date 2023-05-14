@@ -392,6 +392,10 @@
 <a href="#392" id="392">392</a>
 <a href="#393" id="393">393</a>
 <a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
 </pre><pre class="rust"><code><span class="doccomment">//! 任务管理 lib
 
 </span><span class="attr">#![no_std]
@@ -427,363 +431,367 @@
 </span><span class="kw">pub use </span>thread_manager::PThreadManager;
 
 
-<span class="comment">// mod proc_manage;
-// mod proc_rel;
-// pub use proc_manage::PManager;
-// pub use proc_rel::ProcRel;
-// mod proc_thread_rel;
-// mod thread_manager;
-// pub use proc_thread_rel::ProcThreadRel;
-// pub use thread_manager::PThreadManager;
-</span># [cfg(test)]
+# [cfg(test)]
 <span class="kw">mod </span>tests{
 
 
-    <span class="comment">// use crate::id::ProcId;
-    // use crate::id::ThreadId;
-    // use crate::proc_manage::PManager;
-    // use crate::thread_manager::PThreadManager;
-    // use crate::proc_rel::ProcRel;
-    // use crate::proc_thread_rel::ProcThreadRel;
+    <span class="kw">use </span><span class="kw">crate</span>::id::{ProcId, ThreadId};
+    <span class="kw">use </span><span class="kw">crate</span>::Manage;
+    <span class="kw">use </span><span class="kw">crate</span>::Schedule;
 
-    // use alloc::collections::BTreeMap;
-    // use alloc::collections::VecDeque;
-    // use crate::Manage;
-    // use crate::Schedule;
-    // //use core::marker::PhantomData;
+    <span class="attr">#[cfg(feature = <span class="string">&quot;proc&quot;</span>)]
+    </span><span class="kw">use </span><span class="kw">crate</span>::proc_manage::PManager;
+    <span class="attr">#[cfg(feature = <span class="string">&quot;proc&quot;</span>)]
+    </span><span class="kw">use </span><span class="kw">crate</span>::proc_rel::ProcRel;
+
+    <span class="attr">#[cfg(feature = <span class="string">&quot;thread&quot;</span>)]
+    </span><span class="kw">use </span><span class="kw">crate</span>::thread_manager::PThreadManager;
+    <span class="attr">#[cfg(feature = <span class="string">&quot;thread&quot;</span>)]
+    </span><span class="kw">use </span><span class="kw">crate</span>::proc_thread_rel::ProcThreadRel;
+
+    <span class="kw">use </span>alloc::collections::BTreeMap;
+    <span class="kw">use </span>alloc::collections::VecDeque;
+
     
 
-    // #[test]
-    // fn test_id() {
-    //     //测试进程ID
-    //     let id1 = ProcId::new();
-    //     let _id2 = ProcId::from_usize(0);
-    //     let _id3 = ProcId::get_usize(&amp;id1);
-    //     assert_eq!(id1, _id2);
-    //     assert_eq!(0, _id3);
-    //     let id4 = ProcId::from_usize(5);
-    //     let id5 = ProcId::get_usize(&amp;id4);
-    //     assert_eq!(5, id5);
-    //     //测试线程ID
-    //     let tid1 = ThreadId::new();
-    //     let _tid2 = ThreadId::from_usize(0);
-    //     let _tid3 = ThreadId::get_usize(&amp;tid1);
-    //     assert_eq!(tid1, _tid2);
-    //     assert_eq!(0, _tid3);
-    // }
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_id() {
+        <span class="comment">//测试进程ID;new()任务编号自增
+        </span><span class="kw">let </span>id1 = ProcId::new();
+        <span class="kw">let </span>id2 = ProcId::from_usize(<span class="number">0</span>);
+        <span class="macro">assert_eq!</span>(id1, id2);
+        <span class="kw">let </span>id11 = ProcId::new();
+        <span class="kw">let </span>id21 = ProcId::from_usize(<span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(id11, id21);
+
+        <span class="kw">let </span>_id3 = ProcId::get_usize(<span class="kw-2">&amp;</span>id1);
+        <span class="macro">assert_eq!</span>(<span class="number">0</span>, _id3);
+        <span class="kw">let </span>id4 = ProcId::from_usize(<span class="number">5</span>);
+        <span class="kw">let </span>id5 = ProcId::get_usize(<span class="kw-2">&amp;</span>id4);
+        <span class="macro">assert_eq!</span>(<span class="number">5</span>, id5);
+        <span class="comment">//测试线程ID
+        </span><span class="kw">let </span>tid1 = ThreadId::new();
+        <span class="kw">let </span>_tid2 = ThreadId::from_usize(<span class="number">0</span>);
+        <span class="kw">let </span>_tid3 = ThreadId::get_usize(<span class="kw-2">&amp;</span>tid1);
+        <span class="macro">assert_eq!</span>(tid1, _tid2);
+        <span class="macro">assert_eq!</span>(<span class="number">0</span>, _tid3);
+    }
 
 
-    // #[test]
-    // #[cfg(feature = &quot;proc&quot;)]
-    // fn test_proc_manage(){
-    //     /// 进程。
-    //     #[derive(PartialEq)]
-    //     #[derive(Debug)]
-    //     pub struct Process {
-    //         /// 不可变
-    //         pub pid: ProcId,
-    //         // 可变
-    //         //pub context: ForeignContext,
-    //         //pub address_space: AddressSpace&lt;Sv39, Sv39Manager&gt;,
-    //     }
+    <span class="attr">#[test]
+    #[cfg(feature = <span class="string">&quot;proc&quot;</span>)]
+    </span><span class="kw">fn </span>test_proc_manage(){
+        <span class="doccomment">/// 进程。
+        </span><span class="attr">#[derive(PartialEq)]
+        #[derive(Debug)]
+        </span><span class="kw">pub struct </span>Process {
+            <span class="doccomment">/// 不可变
+            </span><span class="kw">pub </span>pid: ProcId,
+            <span class="comment">// 可变
+            //pub context: ForeignContext,
+            //pub address_space: AddressSpace&lt;Sv39, Sv39Manager&gt;,
+        </span>}
 
-    //     impl Process {
-    //         pub fn new() -&gt; Self {
-    //             Self { pid: ProcId::new() }
-    //         }
-    //     }
+        <span class="kw">impl </span>Process {
+            <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+                <span class="self">Self </span>{ pid: ProcId::from_usize(<span class="number">0</span>) }
+            }
+        }
 
-    //     pub struct ProcManager {
-    //         tasks: BTreeMap&lt;ProcId, Process&gt;,
-    //         ready_queue: VecDeque&lt;ProcId&gt;,
-    //     }
+        <span class="kw">pub struct </span>ProcManager {
+            tasks: BTreeMap&lt;ProcId, Process&gt;,
+            ready_queue: VecDeque&lt;ProcId&gt;,
+        }
         
-    //     impl ProcManager {
-    //         /// 新建任务管理器
-    //         pub fn new() -&gt; Self {
-    //             Self {
-    //                 tasks: BTreeMap::new(),
-    //                 ready_queue: VecDeque::new(),
-    //             }
-    //         }
-    //     }
+        <span class="kw">impl </span>ProcManager {
+            <span class="doccomment">/// 新建任务管理器
+            </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+                <span class="self">Self </span>{
+                    tasks: BTreeMap::new(),
+                    ready_queue: VecDeque::new(),
+                }
+            }
+        }
         
-    //     impl Manage&lt;Process, ProcId&gt; for ProcManager {
-    //         /// 插入一个新任务
-    //         #[inline]
-    //         fn insert(&amp;mut self, id: ProcId, task: Process) {
-    //             self.tasks.insert(id, task);
-    //         }
-    //         /// 删除任务实体
-    //         #[inline]
-    //         fn delete(&amp;mut self, id: ProcId) {
-    //             self.tasks.remove(&amp;id);
-    //         }
-    //         /// 根据 id 获取对应的任务
-    //         #[inline]
-    //         fn get_mut(&amp;mut self, id: ProcId) -&gt; Option&lt;&amp;mut Process&gt; {
-    //             self.tasks.get_mut(&amp;id)
-    //         }
-    //     }
+        <span class="kw">impl </span>Manage&lt;Process, ProcId&gt; <span class="kw">for </span>ProcManager {
+            <span class="doccomment">/// 插入一个新任务
+            </span><span class="attr">#[inline]
+            </span><span class="kw">fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: ProcId, task: Process) {
+                <span class="self">self</span>.tasks.insert(id, task);
+            }
+            <span class="doccomment">/// 删除任务实体
+            </span><span class="attr">#[inline]
+            </span><span class="kw">fn </span>delete(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: ProcId) {
+                <span class="self">self</span>.tasks.remove(<span class="kw-2">&amp;</span>id);
+            }
+            <span class="doccomment">/// 根据 id 获取对应的任务
+            </span><span class="attr">#[inline]
+            </span><span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: ProcId) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>Process&gt; {
+                <span class="self">self</span>.tasks.get_mut(<span class="kw-2">&amp;</span>id)
+            }
+        }
         
-    //     impl Schedule&lt;ProcId&gt; for ProcManager {
-    //         /// 添加 id 进入调度队列
-    //         fn add(&amp;mut self, id: ProcId) {
-    //             self.ready_queue.push_back(id);
-    //         }
-    //         /// 从调度队列中取出 id
-    //         fn fetch(&amp;mut self) -&gt; Option&lt;ProcId&gt; {
-    //             self.ready_queue.pop_front()
-    //         }
-    //     }
-    //     let procmanager = ProcManager::new();
-    //     //新建 PManager
-    //     let mut pmanager = PManager::&lt;Process, ProcManager&gt;::new();
+        <span class="kw">impl </span>Schedule&lt;ProcId&gt; <span class="kw">for </span>ProcManager {
+            <span class="doccomment">/// 添加 id 进入调度队列
+            </span><span class="kw">fn </span>add(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: ProcId) {
+                <span class="self">self</span>.ready_queue.push_back(id);
+            }
+            <span class="doccomment">/// 从调度队列中取出 id
+            </span><span class="kw">fn </span>fetch(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;ProcId&gt; {
+                <span class="self">self</span>.ready_queue.pop_front()
+            }
+        }
+        <span class="kw">let </span>procmanager = ProcManager::new();
+        <span class="comment">//新建 PManager
+        </span><span class="kw">let </span><span class="kw-2">mut </span>pmanager = PManager::&lt;Process, ProcManager&gt;::new();
         
-    //     //设置manager
-    //     PManager::set_manager(&amp;mut pmanager, procmanager);
+        <span class="comment">//设置manager
+        </span>PManager::set_manager(<span class="kw-2">&amp;mut </span>pmanager, procmanager);
 
-    //     //添加进程
-    //     let parent =  ProcId::new();
-    //     let id = ProcId::from_usize(3);
-    //     let id1 = ProcId::from_usize(1);
-    //     let task = Process::new();
-    //     PManager::add(&amp;mut pmanager, id, task, parent);
-    //     //PManager::current(&amp;mut pmanager);
-    //     //获取指定进程
-    //     PManager::get_task(&amp;mut pmanager, id);
-    //     let mut task1 = Process::new();
-    //     task1.pid = id1;
-    //     assert_eq!(Some(&amp;mut task1),PManager::get_task(&amp;mut pmanager, id));
-
-        
-    //     assert_eq!(Some(&amp;mut task1), PManager::&lt;Process, ProcManager&gt;::find_next(&amp;mut pmanager));
-    // }
-
-
-    // #[test]
-    // fn test_proc_thread_manage(){
-    //     /// 进程。
-    //     #[derive(PartialEq)]
-    //     #[derive(Debug)]
-    //     pub struct Process {
-    //         /// 不可变
-    //         pub pid: ProcId,
-    //         // 可变
-    //         //pub context: ForeignContext,
-    //         //pub address_space: AddressSpace&lt;Sv39, Sv39Manager&gt;,
-    //     }
-
-    //     impl Process {
-    //         // pub fn new() -&gt; Self {
-    //         //     Self { pid: ProcId::new() }
-    //         // }
-    //     }
-
-    //     pub struct ProcManager {
-    //         tasks: BTreeMap&lt;ProcId, Process&gt;,
-    //         ready_queue: VecDeque&lt;ProcId&gt;,
-    //     }
-        
-    //     impl ProcManager {
-    //         /// 新建任务管理器
-    //         pub fn new() -&gt; Self {
-    //             Self {
-    //                 tasks: BTreeMap::new(),
-    //                 ready_queue: VecDeque::new(),
-    //             }
-    //         }
-    //     }
-        
-    //     impl Manage&lt;Process, ProcId&gt; for ProcManager {
-    //         /// 插入一个新任务
-    //         #[inline]
-    //         fn insert(&amp;mut self, id: ProcId, task: Process) {
-    //             self.tasks.insert(id, task);
-    //         }
-    //         /// 删除任务实体
-    //         #[inline]
-    //         fn delete(&amp;mut self, id: ProcId) {
-    //             self.tasks.remove(&amp;id);
-    //         }
-    //         /// 根据 id 获取对应的任务
-    //         #[inline]
-    //         fn get_mut(&amp;mut self, id: ProcId) -&gt; Option&lt;&amp;mut Process&gt; {
-    //             self.tasks.get_mut(&amp;id)
-    //         }
-    //     }
-        
-    //     impl Schedule&lt;ProcId&gt; for ProcManager {
-    //         /// 添加 id 进入调度队列
-    //         fn add(&amp;mut self, id: ProcId) {
-    //             self.ready_queue.push_back(id);
-    //         }
-    //         /// 从调度队列中取出 id
-    //         fn fetch(&amp;mut self) -&gt; Option&lt;ProcId&gt; {
-    //             self.ready_queue.pop_front()
-    //         }
-    //     }
-
-    //     /// 线程。
-    //     #[derive(PartialEq)]
-    //     #[derive(Debug)]
-    //     pub struct Thread {
-    //         /// 不可变
-    //         pub pid: ThreadId,
-    //         // 可变
-    //         //pub context: ForeignContext,
-    //         //pub address_space: AddressSpace&lt;Sv39, Sv39Manager&gt;,
-    //     }
-
-    //     impl Thread {
-    //         pub fn new() -&gt; Self {
-    //             Self { pid: ThreadId::new() }
-    //         }
-    //     }
-
-    //     pub struct ProcThreadManager {
-    //         tasks: BTreeMap&lt;ThreadId, Thread&gt;,
-    //         ready_queue: VecDeque&lt;ThreadId&gt;,
-    //     }
-        
-    //     impl ProcThreadManager {
-    //         /// 新建任务管理器
-    //         pub fn new() -&gt; Self {
-    //             Self {
-    //                 tasks: BTreeMap::new(),
-    //                 ready_queue: VecDeque::new(),
-    //             }
-    //         }
-    //     }
-        
-    //     impl Manage&lt;Thread, ThreadId&gt; for ProcThreadManager {
-    //         /// 插入一个新任务
-    //         #[inline]
-    //         fn insert(&amp;mut self, id: ThreadId, task: Thread) {
-    //             self.tasks.insert(id, task);
-    //         }
-    //         /// 删除任务实体
-    //         #[inline]
-    //         fn delete(&amp;mut self, id: ThreadId) {
-    //             self.tasks.remove(&amp;id);
-    //         }
-    //         /// 根据 id 获取对应的任务
-    //         #[inline]
-    //         fn get_mut(&amp;mut self, id: ThreadId) -&gt; Option&lt;&amp;mut Thread&gt; {
-    //             self.tasks.get_mut(&amp;id)
-    //         }
-    //     }
-        
-    //     impl Schedule&lt;ThreadId&gt; for ProcThreadManager {
-    //         /// 添加 id 进入调度队列
-    //         fn add(&amp;mut self, id: ThreadId) {
-    //             self.ready_queue.push_back(id);
-    //         }
-    //         /// 从调度队列中取出 id
-    //         fn fetch(&amp;mut self) -&gt; Option&lt;ThreadId&gt; {
-    //             self.ready_queue.pop_front()
-    //         }
-    //     }
+        <span class="comment">//添加进程
+        //let parent =  ProcId::new();
+        </span><span class="kw">let </span>parent = ProcId::from_usize(<span class="number">0</span>);
+        <span class="kw">let </span>id = ProcId::from_usize(<span class="number">3</span>);
+        <span class="kw">let </span>id1 = ProcId::from_usize(<span class="number">0</span>);
+        <span class="kw">let </span>task = Process::new();
+        PManager::add(<span class="kw-2">&amp;mut </span>pmanager, id, task, parent);
+        <span class="comment">//PManager::current(&amp;mut pmanager);
+        //获取指定进程
+        </span>PManager::get_task(<span class="kw-2">&amp;mut </span>pmanager, id);
+        <span class="kw">let </span><span class="kw-2">mut </span>task1 = Process::new();
+        task1.pid = id1;
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>task1),PManager::get_task(<span class="kw-2">&amp;mut </span>pmanager, id));
 
         
-    //     //新建 PManager
-    //     let mut pmanager = PThreadManager::&lt;Process, Thread, ProcThreadManager, ProcManager&gt;::new();
-    //     //设置manager
-    //     let procmanager = ProcManager::new();
-    //     let threadmanager = ProcThreadManager::new();
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>task1), PManager::&lt;Process, ProcManager&gt;::find_next(<span class="kw-2">&amp;mut </span>pmanager));
+    }
 
-    //     PThreadManager::set_manager(&amp;mut pmanager, threadmanager);
-    //     PThreadManager::set_proc_manager(&amp;mut pmanager, procmanager);
+    <span class="attr">#[cfg(feature = <span class="string">&quot;thread&quot;</span>)]
+    #[test]
+    </span><span class="kw">fn </span>test_proc_thread_manage(){
+        <span class="doccomment">/// 进程。
+        </span><span class="attr">#[derive(PartialEq)]
+        #[derive(Debug)]
+        </span><span class="kw">pub struct </span>Process {
+            <span class="doccomment">/// 不可变
+            </span><span class="kw">pub </span>pid: ProcId,
+            <span class="comment">// 可变
+            //pub context: ForeignContext,
+            //pub address_space: AddressSpace&lt;Sv39, Sv39Manager&gt;,
+        </span>}
 
-    //     //添加进程
-    //     let parent =  ProcId::new();
-    //     let _id = ProcId::from_usize(3);
-    //     let _id1 = ProcId::from_usize(1);
-    //     let _tid = ThreadId::new();
-    //     let tid1 = ThreadId::from_usize(5);
-    //     let task = Thread::new();
-    //     PThreadManager::add(&amp;mut pmanager, tid1, task, parent);
+        <span class="kw">impl </span>Process {
+            <span class="comment">// pub fn new() -&gt; Self {
+            //     Self { pid: ProcId::from_usize(0) }
+            // }
+        </span>}
+
+        <span class="kw">pub struct </span>ProcManager {
+            tasks: BTreeMap&lt;ProcId, Process&gt;,
+            ready_queue: VecDeque&lt;ProcId&gt;,
+        }
         
-    //     //PManager::current(&amp;mut pmanager);
-    //     //获取指定进程
-    //     //PThreadManager::get_task(&amp;mut pmanager, id);
-    //     //let mut task1 = Process::new();
-    //     //task1.pid = id1;
-    //     //assert_eq!(Some(&amp;mut task1),PThreadManager::get_task(&amp;mut pmanager, id));
+        <span class="kw">impl </span>ProcManager {
+            <span class="doccomment">/// 新建任务管理器
+            </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+                <span class="self">Self </span>{
+                    tasks: BTreeMap::new(),
+                    ready_queue: VecDeque::new(),
+                }
+            }
+        }
+        
+        <span class="kw">impl </span>Manage&lt;Process, ProcId&gt; <span class="kw">for </span>ProcManager {
+            <span class="doccomment">/// 插入一个新任务
+            </span><span class="attr">#[inline]
+            </span><span class="kw">fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: ProcId, task: Process) {
+                <span class="self">self</span>.tasks.insert(id, task);
+            }
+            <span class="doccomment">/// 删除任务实体
+            </span><span class="attr">#[inline]
+            </span><span class="kw">fn </span>delete(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: ProcId) {
+                <span class="self">self</span>.tasks.remove(<span class="kw-2">&amp;</span>id);
+            }
+            <span class="doccomment">/// 根据 id 获取对应的任务
+            </span><span class="attr">#[inline]
+            </span><span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: ProcId) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>Process&gt; {
+                <span class="self">self</span>.tasks.get_mut(<span class="kw-2">&amp;</span>id)
+            }
+        }
+        
+        <span class="kw">impl </span>Schedule&lt;ProcId&gt; <span class="kw">for </span>ProcManager {
+            <span class="doccomment">/// 添加 id 进入调度队列
+            </span><span class="kw">fn </span>add(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: ProcId) {
+                <span class="self">self</span>.ready_queue.push_back(id);
+            }
+            <span class="doccomment">/// 从调度队列中取出 id
+            </span><span class="kw">fn </span>fetch(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;ProcId&gt; {
+                <span class="self">self</span>.ready_queue.pop_front()
+            }
+        }
+
+        <span class="doccomment">/// 线程。
+        </span><span class="attr">#[derive(PartialEq)]
+        #[derive(Debug)]
+        </span><span class="kw">pub struct </span>Thread {
+            <span class="doccomment">/// 不可变
+            </span><span class="kw">pub </span>pid: ThreadId,
+            <span class="comment">// 可变
+            //pub context: ForeignContext,
+            //pub address_space: AddressSpace&lt;Sv39, Sv39Manager&gt;,
+        </span>}
+
+        <span class="kw">impl </span>Thread {
+            <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+                <span class="self">Self </span>{ pid: ThreadId::from_usize(<span class="number">0</span>) }
+            }
+        }
+
+        <span class="kw">pub struct </span>ProcThreadManager {
+            tasks: BTreeMap&lt;ThreadId, Thread&gt;,
+            ready_queue: VecDeque&lt;ThreadId&gt;,
+        }
+        
+        <span class="kw">impl </span>ProcThreadManager {
+            <span class="doccomment">/// 新建任务管理器
+            </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+                <span class="self">Self </span>{
+                    tasks: BTreeMap::new(),
+                    ready_queue: VecDeque::new(),
+                }
+            }
+        }
+        
+        <span class="kw">impl </span>Manage&lt;Thread, ThreadId&gt; <span class="kw">for </span>ProcThreadManager {
+            <span class="doccomment">/// 插入一个新任务
+            </span><span class="attr">#[inline]
+            </span><span class="kw">fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: ThreadId, task: Thread) {
+                <span class="self">self</span>.tasks.insert(id, task);
+            }
+            <span class="doccomment">/// 删除任务实体
+            </span><span class="attr">#[inline]
+            </span><span class="kw">fn </span>delete(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: ThreadId) {
+                <span class="self">self</span>.tasks.remove(<span class="kw-2">&amp;</span>id);
+            }
+            <span class="doccomment">/// 根据 id 获取对应的任务
+            </span><span class="attr">#[inline]
+            </span><span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: ThreadId) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>Thread&gt; {
+                <span class="self">self</span>.tasks.get_mut(<span class="kw-2">&amp;</span>id)
+            }
+        }
+        
+        <span class="kw">impl </span>Schedule&lt;ThreadId&gt; <span class="kw">for </span>ProcThreadManager {
+            <span class="doccomment">/// 添加 id 进入调度队列
+            </span><span class="kw">fn </span>add(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: ThreadId) {
+                <span class="self">self</span>.ready_queue.push_back(id);
+            }
+            <span class="doccomment">/// 从调度队列中取出 id
+            </span><span class="kw">fn </span>fetch(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;ThreadId&gt; {
+                <span class="self">self</span>.ready_queue.pop_front()
+            }
+        }
 
         
-    //     //assert_eq!(Some(&amp;mut task1), PThreadManager::&lt;Process, ProcManager&gt;::find_next(&amp;mut pmanager));
-    // }
+        <span class="comment">//新建 PManager
+        </span><span class="kw">let </span><span class="kw-2">mut </span>pmanager = PThreadManager::&lt;Process, Thread, ProcThreadManager, ProcManager&gt;::new();
+        <span class="comment">//设置manager
+        </span><span class="kw">let </span>procmanager = ProcManager::new();
+        <span class="kw">let </span>threadmanager = ProcThreadManager::new();
 
+        PThreadManager::set_manager(<span class="kw-2">&amp;mut </span>pmanager, threadmanager);
+        PThreadManager::set_proc_manager(<span class="kw-2">&amp;mut </span>pmanager, procmanager);
 
-
-
-    // #[test]
-    // fn test_proc_rel(){
-    //     let parent_pid = ProcId::new();
-    //     let child_pid = ProcId::from_usize(5);
-    //     let exit_code = 1;
-    //     //创建一个进程时同时创建进程关系
-    //     let mut _procrel = ProcRel::new(parent_pid);
-    //     //测试等待子进程结束的函数
-    //     assert_eq!(None, ProcRel::wait_any_child(&amp;mut _procrel));
-    //     assert_eq!(None, ProcRel::wait_child(&amp;mut _procrel, child_pid));
-    //     //添加子进程
-    //     ProcRel::add_child(&amp;mut _procrel, child_pid);
-    //     assert_eq!(_procrel.children[0], child_pid);
-    //     assert_eq!(Some((ProcId::from_usize(-2 as _), -1)), ProcRel::wait_any_child(&amp;mut _procrel));
-    //     assert_eq!(Some((ProcId::from_usize(-2 as _), -1)), ProcRel::wait_child(&amp;mut _procrel, child_pid));
-    //     //子进程结束，子进程 Id 被移入到 dead_children 队列中
-    //     ProcRel::del_child(&amp;mut _procrel, child_pid,exit_code);
-    //     assert_eq!(_procrel.children, []);
-    //     ProcRel::wait_any_child(&amp;mut _procrel);
-    //     assert_eq!(_procrel.dead_children.pop(), ProcRel::wait_any_child(&amp;mut _procrel));
-    //     assert_eq!(_procrel.dead_children.pop(), None);
-    //     //测试等待子进程结束的函数
-    //     ProcRel::add_child(&amp;mut _procrel, child_pid);
-    //     ProcRel::del_child(&amp;mut _procrel, child_pid,exit_code);
-    //     assert_eq!(Some((child_pid, 1)), ProcRel::wait_child(&amp;mut _procrel, child_pid));
-    // }
-
-    // #[test]
-    // fn test_proc_thread_rel(){
-    //     let parent_pid = ProcId::new();
-    //     let child_pid = ProcId::from_usize(5);
-    //     let _tid1 = ThreadId::new();
-    //     let thread_pid = ThreadId::from_usize(3);
-    //     let exit_code = 1;
-    //     //创建一个进程时同时创建进程关系
-    //     let mut _procrel = ProcThreadRel::new(parent_pid);
-    //     //测试等待子进程结束的函数
-    //     assert_eq!(None, ProcThreadRel::wait_any_child(&amp;mut _procrel));
-    //     assert_eq!(None, ProcThreadRel::wait_child(&amp;mut _procrel, child_pid));
-    //     //添加子进程
-    //     ProcThreadRel::add_child(&amp;mut _procrel, child_pid);
-    //     assert_eq!(_procrel.children[0], child_pid);
-    //     assert_eq!(Some((ProcId::from_usize(-2 as _), -1)), ProcThreadRel::wait_any_child(&amp;mut _procrel));
-    //     assert_eq!(Some((ProcId::from_usize(-2 as _), -1)), ProcThreadRel::wait_child(&amp;mut _procrel, child_pid));
-    //     //子进程结束，子进程 Id 被移入到 dead_children 队列中
-    //     ProcThreadRel::del_child(&amp;mut _procrel, child_pid,exit_code);
-    //     assert_eq!(_procrel.children, []);
-    //     ProcThreadRel::wait_any_child(&amp;mut _procrel);
-    //     assert_eq!(_procrel.dead_children.pop(), ProcThreadRel::wait_any_child(&amp;mut _procrel));
-    //     assert_eq!(_procrel.dead_children.pop(), None);
-    //     //测试等待子进程结束的函数
-    //     ProcThreadRel::add_child(&amp;mut _procrel, child_pid);
-    //     ProcThreadRel::del_child(&amp;mut _procrel, child_pid,exit_code);
-    //     assert_eq!(Some((child_pid, 1)), ProcThreadRel::wait_child(&amp;mut _procrel, child_pid));
+        <span class="comment">//添加进程
+        </span><span class="kw">let </span>parent =  ProcId::from_usize(<span class="number">0</span>);
+        <span class="kw">let </span>_id = ProcId::from_usize(<span class="number">3</span>);
+        <span class="kw">let </span>_id1 = ProcId::from_usize(<span class="number">1</span>);
+        <span class="kw">let </span>_tid = ThreadId::from_usize(<span class="number">0</span>);
+        <span class="kw">let </span>tid1 = ThreadId::from_usize(<span class="number">5</span>);
+        <span class="kw">let </span>task = Thread::new();
+        PThreadManager::add(<span class="kw-2">&amp;mut </span>pmanager, tid1, task, parent);
         
-    //     assert_eq!(None, ProcThreadRel::wait_thread(&amp;mut _procrel, thread_pid));
-    //     //添加线程
-    //     ProcThreadRel::add_thread(&amp;mut _procrel, thread_pid);
-    //     assert_eq!(_procrel.threads[0], thread_pid);
-    //     assert_eq!(Some(-2), ProcThreadRel::wait_thread(&amp;mut _procrel, thread_pid));
-    //     //线程结束，线程 Id 被移入到 dead_children 队列中
-    //     ProcThreadRel::del_thread(&amp;mut _procrel, thread_pid, exit_code);
-    //     assert_eq!(_procrel.children, []);
-    //     assert_eq!(Some(1), ProcThreadRel::wait_thread(&amp;mut _procrel, thread_pid));
-    // }
+        <span class="comment">//PManager::current(&amp;mut pmanager);
+        //获取指定进程
+        //PThreadManager::get_task(&amp;mut pmanager, id);
+        //let mut task1 = Process::new();
+        //task1.pid = id1;
+        //assert_eq!(Some(&amp;mut task1),PThreadManager::get_task(&amp;mut pmanager, id));
+
+        
+        //assert_eq!(Some(&amp;mut task1), PThreadManager::&lt;Process, ProcManager&gt;::find_next(&amp;mut pmanager));
+    </span>}
 
 
-</span>}</code></pre></div>
+
+    <span class="attr">#[cfg(feature = <span class="string">&quot;proc&quot;</span>)]
+    #[test]
+    </span><span class="kw">fn </span>test_proc_rel(){
+        <span class="kw">let </span>parent_pid = ProcId::from_usize(<span class="number">0</span>);
+        <span class="kw">let </span>child_pid = ProcId::from_usize(<span class="number">5</span>);
+        <span class="kw">let </span>exit_code = <span class="number">1</span>;
+        <span class="comment">//创建一个进程时同时创建进程关系
+        </span><span class="kw">let </span><span class="kw-2">mut </span>_procrel = ProcRel::new(parent_pid);
+        <span class="comment">//测试等待子进程结束的函数
+        </span><span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, ProcRel::wait_any_child(<span class="kw-2">&amp;mut </span>_procrel));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, ProcRel::wait_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid));
+        <span class="comment">//添加子进程
+        </span>ProcRel::add_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid);
+        <span class="macro">assert_eq!</span>(_procrel.children[<span class="number">0</span>], child_pid);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>((ProcId::from_usize(-<span class="number">2 </span><span class="kw">as _</span>), -<span class="number">1</span>)), ProcRel::wait_any_child(<span class="kw-2">&amp;mut </span>_procrel));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>((ProcId::from_usize(-<span class="number">2 </span><span class="kw">as _</span>), -<span class="number">1</span>)), ProcRel::wait_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid));
+        <span class="comment">//子进程结束，子进程 Id 被移入到 dead_children 队列中
+        </span>ProcRel::del_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid,exit_code);
+        <span class="macro">assert_eq!</span>(_procrel.children, []);
+        ProcRel::wait_any_child(<span class="kw-2">&amp;mut </span>_procrel);
+        <span class="macro">assert_eq!</span>(_procrel.dead_children.pop(), ProcRel::wait_any_child(<span class="kw-2">&amp;mut </span>_procrel));
+        <span class="macro">assert_eq!</span>(_procrel.dead_children.pop(), <span class="prelude-val">None</span>);
+        <span class="comment">//测试等待子进程结束的函数
+        </span>ProcRel::add_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid);
+        ProcRel::del_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid,exit_code);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>((child_pid, <span class="number">1</span>)), ProcRel::wait_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid));
+    }
+
+    
+    <span class="attr">#[test]
+    #[cfg(feature = <span class="string">&quot;thread&quot;</span>)]
+    </span><span class="kw">fn </span>test_proc_thread_rel(){
+        <span class="kw">let </span>parent_pid = ProcId::from_usize(<span class="number">0</span>);
+        <span class="kw">let </span>child_pid = ProcId::from_usize(<span class="number">5</span>);
+        <span class="kw">let </span>_tid1 = ThreadId::from_usize(<span class="number">0</span>);
+        <span class="kw">let </span>thread_pid = ThreadId::from_usize(<span class="number">3</span>);
+        <span class="kw">let </span>exit_code = <span class="number">1</span>;
+        <span class="comment">//创建一个进程时同时创建进程关系
+        </span><span class="kw">let </span><span class="kw-2">mut </span>_procrel = ProcThreadRel::new(parent_pid);
+        <span class="comment">//测试等待子进程结束的函数
+        </span><span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, ProcThreadRel::wait_any_child(<span class="kw-2">&amp;mut </span>_procrel));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, ProcThreadRel::wait_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid));
+        <span class="comment">//添加子进程
+        </span>ProcThreadRel::add_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid);
+        <span class="macro">assert_eq!</span>(_procrel.children[<span class="number">0</span>], child_pid);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>((ProcId::from_usize(-<span class="number">2 </span><span class="kw">as _</span>), -<span class="number">1</span>)), ProcThreadRel::wait_any_child(<span class="kw-2">&amp;mut </span>_procrel));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>((ProcId::from_usize(-<span class="number">2 </span><span class="kw">as _</span>), -<span class="number">1</span>)), ProcThreadRel::wait_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid));
+        <span class="comment">//子进程结束，子进程 Id 被移入到 dead_children 队列中
+        </span>ProcThreadRel::del_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid,exit_code);
+        <span class="macro">assert_eq!</span>(_procrel.children, []);
+        ProcThreadRel::wait_any_child(<span class="kw-2">&amp;mut </span>_procrel);
+        <span class="macro">assert_eq!</span>(_procrel.dead_children.pop(), ProcThreadRel::wait_any_child(<span class="kw-2">&amp;mut </span>_procrel));
+        <span class="macro">assert_eq!</span>(_procrel.dead_children.pop(), <span class="prelude-val">None</span>);
+        <span class="comment">//测试等待子进程结束的函数
+        </span>ProcThreadRel::add_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid);
+        ProcThreadRel::del_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid,exit_code);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>((child_pid, <span class="number">1</span>)), ProcThreadRel::wait_child(<span class="kw-2">&amp;mut </span>_procrel, child_pid));
+        
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, ProcThreadRel::wait_thread(<span class="kw-2">&amp;mut </span>_procrel, thread_pid));
+        <span class="comment">//添加线程
+        </span>ProcThreadRel::add_thread(<span class="kw-2">&amp;mut </span>_procrel, thread_pid);
+        <span class="macro">assert_eq!</span>(_procrel.threads[<span class="number">0</span>], thread_pid);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(-<span class="number">2</span>), ProcThreadRel::wait_thread(<span class="kw-2">&amp;mut </span>_procrel, thread_pid));
+        <span class="comment">//线程结束，线程 Id 被移入到 dead_children 队列中
+        </span>ProcThreadRel::del_thread(<span class="kw-2">&amp;mut </span>_procrel, thread_pid, exit_code);
+        <span class="macro">assert_eq!</span>(_procrel.children, []);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">1</span>), ProcThreadRel::wait_thread(<span class="kw-2">&amp;mut </span>_procrel, thread_pid));
+    }
+
+
+}</code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rcore_task_manage" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (c97b539e4 2022-11-30)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
